@@ -53,6 +53,27 @@ def generate_docs(program, lang, existing_docs="None"):
         return response.text
     except Exception as e:
         return f"Error: {str(e)}"
+    
+
+def isWithBug(program, lang):
+    try:
+        prompt = f"""
+        You are an excellent developer who knows {lang} in depth.
+        Your task is to identify the errors in the given code if any : {program}.
+        If there are no errors then you have to respond as "False" else you have to
+        respond as "True".
+        """
+
+        model = genai.GenerativeModel('gemini-pro')
+        response = model.generate_content(prompt)
+        if response.text == 'False':
+            return "No errors found in the code."
+        else:
+            return "Errors found in the code."
+    except Exception as e:
+        return f"Error: {str(e)}"
+    
+
 
 # Load existing documentation from README
 existing_docs = ''
@@ -72,9 +93,14 @@ readme = st.button('Generate Documentation')
 if readme:
     if code:
         # Pass text from existing_docs to the function
+        flag = isWithBug(code, selected_option)
         docs = generate_docs(code, selected_option, existing_docs)
         st.write(docs)
-        save_to_readme(docs)
-        st.success('Documentation saved to README.md')
+        if flag == "No errors found in the code.":
+            st.success('Documentation generated successfully')
+            save_to_readme(docs)
+            st.success('Documentation saved to README.md')
+        else:
+            st.error('Errors found in the code. Please fix them and try again.')
     else:
         st.write('Please enter the code to generate documentation')
